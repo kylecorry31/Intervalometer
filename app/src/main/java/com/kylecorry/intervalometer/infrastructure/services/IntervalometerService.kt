@@ -22,7 +22,8 @@ class IntervalometerService : AccessibilityService() {
     private val knownShutterButtons = listOf(
         "com.android.camera:id/shutter_button",
         "com.android.camera2:id/shutter_button",
-        "com.google.android.GoogleCamera:id/shutter_button"
+        "com.google.android.GoogleCamera:id/shutter_button",
+        "com.riseupgames.proshot2:id/cameraButton"
     )
 
     private var stopReceiver = object : BroadcastReceiver() {
@@ -31,7 +32,7 @@ class IntervalometerService : AccessibilityService() {
             Notify.cancel(this@IntervalometerService, 2)
         }
     }
-    
+
     private var secondsUntilNextPhoto = 0L
 
     private val timer = CoroutineTimer {
@@ -64,6 +65,8 @@ class IntervalometerService : AccessibilityService() {
             )
         ) {
             restartTimer()
+        } else {
+            println(event?.source?.viewIdResourceName)
         }
     }
 
