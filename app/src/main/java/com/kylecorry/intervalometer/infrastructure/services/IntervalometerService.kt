@@ -23,7 +23,8 @@ class IntervalometerService : AccessibilityService() {
         "com.android.camera:id/shutter_button",
         "com.android.camera2:id/shutter_button",
         "com.google.android.GoogleCamera:id/shutter_button",
-        "com.riseupgames.proshot2:id/cameraButton"
+        "com.riseupgames.proshot2:id/cameraButton",
+        "net.sourceforge.opencamera:id/take_photo",
     )
 
     private var stopReceiver = object : BroadcastReceiver() {
