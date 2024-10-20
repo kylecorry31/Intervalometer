@@ -34,6 +34,12 @@ class MainFragment : BoundFragment<FragmentMainBinding>() {
         }
 
         binding.interval.setText(prefs.getLong("interval")?.toString())
+
+        binding.shutterButtonIds.doOnTextChanged { text, _, _, _ ->
+            prefs.putString("shutter_buttons", text.toString())
+        }
+
+        binding.shutterButtonIds.setText(prefs.getString("shutter_buttons"))
     }
 
     override fun generateBinding(

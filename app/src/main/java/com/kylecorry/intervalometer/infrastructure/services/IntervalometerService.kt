@@ -19,13 +19,17 @@ import com.kylecorry.luna.timer.CoroutineTimer
 class IntervalometerService : AccessibilityService() {
 
     private val prefs by lazy { SharedPreferences(this) }
-    private val knownShutterButtons = listOf(
+    private val knownShutterButtonIds = listOf(
         "com.android.camera:id/shutter_button",
         "com.android.camera2:id/shutter_button",
         "com.google.android.GoogleCamera:id/shutter_button",
         "com.riseupgames.proshot2:id/cameraButton",
-        "net.sourceforge.opencamera:id/take_photo",
+        "net.sourceforge.opencamera:id/take_photo"
     )
+
+    private val shutterButtonIds: List<String>
+        get() = (prefs.getString("shutter_buttons") ?: "").split(",").map { it.trim() }
+            .filter { it.isNotBlank() } + knownShutterButtonIds
 
     private var stopReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -39,7 +43,11 @@ class IntervalometerService : AccessibilityService() {
     private val timer = CoroutineTimer {
         // Trigger a notification with the remaining time
         secondsUntilNextPhoto--
-        Notify.cancel(this, 2)
+
+        // Only cancel and reshow when the time is less than 5 seconds
+        if (secondsUntilNextPhoto <= 5) {
+            Notify.cancel(this, 2)
+        }
         Notify.send(
             this,
             2,
@@ -49,7 +57,13 @@ class IntervalometerService : AccessibilityService() {
                 secondsUntilNextPhoto.toString(),
                 null,
                 R.drawable.bubble,
-                group = "alerts"
+                group = "alerts",
+                intent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
             )
         )
         if (secondsUntilNextPhoto <= 0) {
@@ -61,7 +75,7 @@ class IntervalometerService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         // Start the timer when a shutter button is clicked
-        if (!timer.isRunning() && knownShutterButtons.contains(
+        if (!timer.isRunning() && shutterButtonIds.contains(
                 event?.source?.viewIdResourceName ?: ""
             )
         ) {
@@ -135,7 +149,7 @@ class IntervalometerService : AccessibilityService() {
 
     private fun clickShutterButton() {
         val nodeInfo = rootInActiveWindow
-        for (shutterButton in knownShutterButtons) {
+        for (shutterButton in shutterButtonIds) {
             val nodes = nodeInfo?.findAccessibilityNodeInfosByViewId(shutterButton)
             if (nodes != null && nodes.isNotEmpty()) {
                 nodes.forEach {
