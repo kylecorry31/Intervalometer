@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.kylecorry.andromeda.notify.Notify
@@ -35,6 +36,16 @@ class IntervalometerService : AccessibilityService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             timer.stop()
             Notify.cancel(this@IntervalometerService, 2)
+        }
+    }
+
+    private var disableReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            // Open accessibility settings so user can disable the service
+            val settingsIntent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(settingsIntent)
         }
     }
 
@@ -99,8 +110,13 @@ class IntervalometerService : AccessibilityService() {
                 stopReceiver, IntentFilter("com.kylecorry.intervalometer.STOP"),
                 RECEIVER_NOT_EXPORTED
             )
+            registerReceiver(
+                disableReceiver, IntentFilter("com.kylecorry.intervalometer.DISABLE"),
+                RECEIVER_NOT_EXPORTED
+            )
         } else {
             registerReceiver(stopReceiver, IntentFilter("com.kylecorry.intervalometer.STOP"))
+            registerReceiver(disableReceiver, IntentFilter("com.kylecorry.intervalometer.DISABLE"))
         }
 
         Notify.send(
@@ -114,6 +130,14 @@ class IntervalometerService : AccessibilityService() {
                             this,
                             0,
                             Intent("com.kylecorry.intervalometer.STOP"),
+                            PendingIntent.FLAG_IMMUTABLE
+                        ), R.drawable.ic_info
+                    ),
+                    Notify.action(
+                        "Disable", PendingIntent.getBroadcast(
+                            this,
+                            1,
+                            Intent("com.kylecorry.intervalometer.DISABLE"),
                             PendingIntent.FLAG_IMMUTABLE
                         ), R.drawable.ic_info
                     ),
@@ -134,6 +158,7 @@ class IntervalometerService : AccessibilityService() {
         Notify.cancel(this, 1)
         Notify.cancel(this, 2)
         unregisterReceiver(stopReceiver)
+        unregisterReceiver(disableReceiver)
     }
 
     private fun restartTimer() {
